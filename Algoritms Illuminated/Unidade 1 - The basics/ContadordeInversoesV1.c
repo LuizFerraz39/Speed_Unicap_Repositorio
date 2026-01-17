@@ -134,7 +134,6 @@ int Sort_CountInv(int n, int* array){
 
         int Minv = Merge_CountSplitInv(Nhalf, n, Chalf, Dhalf, array);
 
-        printf("Cinv = %d \nDinv = %d\nMinv = %d\n\n", Cinv, Dinv, Minv);
         free(Chalf);
         free(Dhalf);
 
