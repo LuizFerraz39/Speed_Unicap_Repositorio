@@ -2,6 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct matriz {
+    int** sda;
+    int** sdb;
+    int** sdc;
+    int** sdd;
+} Matriz ;
+
+Matriz* Matriz_Create(int** ma, int n);
+void Struct_Void(Matriz* mtz);
 void Matrix_Get(int x, int y, int n, int** matrix);
 void Matrix_Fill(int x, int y, int n, int** matrix);
 void Matrix_Print(int x, int y, int** matrix);
@@ -10,9 +19,6 @@ void Strassen (int n, int** ma, int** mb, int** mc);
 void Matrix_Sub (int n, int** ma, int** mb, int** mc);
 void Matrix_Add (int n, int** ma, int** mb, int** mc);
 void Matrix_Void (int n, int** ma);
-void Matrix_Divisions ();
-
-
 
 int main(){
     int n, x1, y1, x2, y2;
@@ -68,15 +74,6 @@ void Strassen (int n, int** ma, int** mb, int**mc){
     if (n%2 == 1){
         n++;
     }
-        int** sda = calloc(n, sizeof(int*));
-        int** sdb = calloc(n, sizeof(int*));
-        int** sdc = calloc(n, sizeof(int*));
-        int** sdd = calloc(n, sizeof(int*));
-        int** sde = calloc(n, sizeof(int*));
-        int** sdf = calloc(n, sizeof(int*));
-        int** sdg = calloc(n, sizeof(int*));
-        int** sdh = calloc(n, sizeof(int*));
-
         int n3 = n/2;
         int** p1 = calloc(n, sizeof(int*));
         int** p2 = calloc(n, sizeof(int*));
@@ -133,60 +130,36 @@ void Strassen (int n, int** ma, int** mb, int**mc){
             sdddt[i] = calloc(n, sizeof(int));
             sdddtt[i] = calloc(n, sizeof(int));
 
-            sda[i] = calloc(n, sizeof(int));
-            sdb[i] = calloc(n, sizeof(int));
-            sdc[i] = calloc(n, sizeof(int));
-            sdd[i] = calloc(n, sizeof(int));
-            sde[i] = calloc(n, sizeof(int));
-            sdf[i] = calloc(n, sizeof(int));
-            sdg[i] = calloc(n, sizeof(int));
-            sdh[i] = calloc(n, sizeof(int)); 
         }
-        for (int i = 0; i<n3;i++){
-            for (int j = 0; j<n3;j++){
-                sda[i][j] = ma[i][j];
-                sdb[i][j] = ma[i][j+(n3)];
-                sdc[i][j] = ma[i+(n3)][j];
-                sdd[i][j] = ma[i+(n3)][j+(n3)];
-                sde[i][j] = mb[i][j];
-                sdf[i][j] = mb[i][j+(n3)];
-                sdg[i][j] = mb[i+(n3)][j];
-                sdh[i][j] = mb[i+(n3)][j+(n3)];
-            }
-        }
-        Matrix_Print(n,n,sda);
-        Matrix_Print(n,n,sdb);
-        Matrix_Print(n,n,sdc);
-        Matrix_Print(n,n,sdd);
-        Matrix_Print(n,n,sde);
-        Matrix_Print(n,n,sdf);
-        Matrix_Print(n,n,sdg);
-        Matrix_Print(n,n,sdh);
-        
+
+        Matriz* mta = Matriz_Create(ma, n3);
+        Matriz* mtb = Matriz_Create(mb, n3);
+
         /* Calculo P1 */
-        Matrix_Sub(n3,sdf,sdh,p1t);
-        Strassen(n3,sda,p1t,p1); 
+        Matrix_Sub(n3,mtb->sdb,mtb->sdd,p1t);
+        Strassen(n3,mta->sda,p1t,p1); 
         /* Calculo P2 */
-        Matrix_Add(n3,sda,sdb,p2t);
-        Strassen(n3,p2t,sdh,p2);
+        Matrix_Add(n3,mta->sda,mta->sdb,p2t);
+        Strassen(n3,p2t,mtb->sdd,p2);
         /* Calculo P3 */
-        Matrix_Add(n3,sdc,sdd,p3t);
-        Strassen(n3, p3t, sde, p3);
+        Matrix_Add(n3,mta->sdc,mta->sdd,p3t);
+        Strassen(n3, p3t, mtb->sda, p3);
         /* Calculo P4 */
-        Matrix_Sub(n3,sdg,sde,p4t);
-        Strassen(n3,sdd,p4t,p4);
+        Matrix_Sub(n3,mtb->sdc,mtb->sda,p4t);
+        Strassen(n3,mta->sdd,p4t,p4);
         /* Calculo P5 */
-        Matrix_Add(n3, sda, sdd, p5t);
-        Matrix_Add(n3, sde, sdh, p5tt);
+        Matrix_Add(n3, mta->sda, mta->sdd, p5t);
+        Matrix_Add(n3, mtb->sda, mtb->sdd, p5tt);
         Strassen(n3, p5t, p5tt, p5);
         /* Calculo P6 */
-        Matrix_Sub(n3, sdb, sdd, p6t);
-        Matrix_Add(n3, sdg, sdh, p6tt);
+        Matrix_Sub(n3, mta->sdb, mta->sdd, p6t);
+        Matrix_Add(n3, mtb->sdc, mtb->sdd, p6tt);
         Strassen(n3, p6t, p6tt, p6);
         /* Calculo P7 */
-        Matrix_Sub(n3, sda, sdc, p7t);
-        Matrix_Add(n3, sde, sdf, p7tt);
+        Matrix_Sub(n3, mta->sda, mta->sdc, p7t);
+        Matrix_Add(n3, mtb->sda, mtb->sdb, p7tt);
         Strassen(n3, p7t, p7tt, p7);
+
 
         /* Calculo subdivisãofinal A */
         Matrix_Add(n3, p5,p4,sddat);
@@ -210,14 +183,9 @@ void Strassen (int n, int** ma, int** mb, int**mc){
             }
         }
 
-        Matrix_Void(n, sda); 
-        Matrix_Void(n, sdb);
-        Matrix_Void(n, sdc);
-        Matrix_Void(n, sdd);
-        Matrix_Void(n, sde);
-        Matrix_Void(n, sdf);
-        Matrix_Void(n, sdg);
-        Matrix_Void(n, sdh);
+
+        Struct_Void(mta);
+        Struct_Void(mtb);
         Matrix_Void(n, p1);
         Matrix_Void(n, p2);
         Matrix_Void(n, p3);
@@ -254,6 +222,7 @@ void Matrix_Sub (int n, int** ma, int** mb, int** mc){
             mc[i][j] = ma[i][j] - mb[i][j];
         }
     }
+
 }
 
 void Matrix_Add (int n, int** ma, int** mb, int** mc){
@@ -262,7 +231,33 @@ void Matrix_Add (int n, int** ma, int** mb, int** mc){
             mc[i][j] = ma[i][j] + mb[i][j];
         }
     }
+
 }
+
+Matriz* Matriz_Create(int **ma, int n) {
+    Matriz *mtz = malloc(sizeof(Matriz));
+
+    mtz->sda = malloc(n * sizeof(int*));
+    mtz->sdb = malloc(n * sizeof(int*));
+    mtz->sdc = malloc(n * sizeof(int*));
+    mtz->sdd = malloc(n * sizeof(int*));
+
+    for (int i = 0; i < n; i++) {
+        mtz->sda[i] = ma[i];
+        mtz->sdb[i] = ma[i] + n;
+        mtz->sdc[i] = ma[i + n];
+        mtz->sdd[i] = ma[i + n] + n;
+    }
+
+    return mtz;
+}
+
+void Struct_Void(Matriz* mtz){
+    free(mtz->sdc);
+    free(mtz->sdd);
+    free(mtz);
+}
+
 
 void Matrix_Get(int x, int y, int n, int** matrix){
     for (int i = 0; i < n*2; i++){
