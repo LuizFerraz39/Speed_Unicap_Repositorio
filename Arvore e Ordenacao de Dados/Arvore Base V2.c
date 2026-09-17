@@ -1,28 +1,13 @@
-#include<stdlib.h>
-#include<stdio.h>
+#include <stdlib.h>
+#include <stdio.h>
 #define MAX 50
-// Aluno: Luiz Felipe Ribeiro Ferraz
-// Referente a atividade da lista 2
-
-/* 
-1ª Questão: Implemente os métodos abaixo:
-a. Uma função recursiva para contar o número de nós.
-b. Uma função não recursiva para contar o número de nós.
-c. Uma função recursiva para contar o número de folhas.
-d. Uma função não recursiva para contar o número de folhas.
-e. Uma função recursiva para contar o número de nós não-terminais.
-f. Uma função não recursiva para contar o número de nós não-terminais.
-DICA: Para implementar os métodos solicitados na questão 1, utilize um dos passeios estudados e adapte para realizar a tarefa requisitada.
-2ª Questão: Considere uma árvore binária de busca de números inteiros que aceita valores repetidos. Implemente uma função de busca não recursiva que, dado um valor, retorna quantas vezes ele foi encontrado na árvore.
-3ª Questão: Reimplemente o passeio emOrdem através de um procedimento não recursivo. Para tal, utilize como base a ideia do passeio por nível de usar uma estrutura de dados auxiliar para “guardar a ordem” na qual se deseja percorrer os nós da árvore.
-DICA: No passeio por nível, utilizamos uma Queue como estrutura de dados auxiliar. Para implementar o passeio emOrdem não recursivo, utilize uma Stack como estrutura de dados auxiliar para simular a pilha de recursão e guardar a ordem na qual desejamos visitar os nós.
- */
 
 typedef struct Node{
     int data;
     struct Node* left;
     struct Node* right;
     int qtd;
+    int balance;
 } *Node;
 
 typedef struct Tree{
@@ -135,6 +120,7 @@ Node CreateNode(int data){
 
     node->data = data;
     node->qtd = 1;
+    node->balance = 0;
 
     return node;
 }
@@ -444,6 +430,201 @@ void FNaoRecursivaContarNosNaoTerminais(Tree tree, int* counter){
     }
     else{
         return;
+    }
+}
+
+void RotateLeft(Node *raiz, int *status){
+    if ((*raiz)->right->balance == 1){
+        Node aux = *raiz;
+        *raiz = aux->right;
+        aux->right = (*raiz)->left;
+        (*raiz)->left = aux;
+        aux->balance = 0;
+        (*raiz)->balance = 0;
+    }
+    else{
+        Node aux1 = (*raiz)->right;
+        Node aux2 = aux1->left;
+        aux1->left = aux2->right;
+        aux2->right = aux1;
+        (*raiz)->right = aux2->left;
+        aux2->left = *raiz;
+        if (aux2->balance == 1){
+            (*raiz)->balance = -1;
+            aux1->balance = 0;
+        }
+        else if (aux2->balance == 0){
+            (*raiz)->balance = 0;
+            aux1->balance = 0;
+        }
+        else{
+            (*raiz)->balance = 0;
+            aux1->balance = 1;
+        }
+        *raiz = aux2;
+        (*raiz)->balance = 0;
+    }
+}
+
+void RotateRight(Node *raiz, int *status){
+    if ((*raiz)->left->balance == -1){
+        Node aux = *raiz;
+        *raiz = aux->left;
+        aux->left = (*raiz)->right;
+        (*raiz)->right = aux;
+        aux->balance = 0;
+        (*raiz)->balance = 0;
+    }
+    else{
+        Node aux1 = (*raiz)->left;
+        Node aux2 = aux1->right;
+        aux1->right = aux2->left;
+        aux2->left = aux1;
+        (*raiz)->left = aux2->right;
+        aux2->right = *raiz;
+        if (aux2->balance == -1){
+            (*raiz)->balance = 1;
+            aux1->balance = 0;
+        }
+        else if (aux2->balance == 0){
+            (*raiz)->balance = 0;
+            aux1->balance = 0;
+        }
+        else{
+            (*raiz)->balance = 0;
+            aux1->balance = -1;
+        }
+        *raiz = aux2;
+        (*raiz)->balance = 0;
+    }
+}
+
+void BalancedInsert(Node *raiz, int data, int *status){
+    if (*raiz == NULL){
+        *raiz = CreateNode(data);
+        *status = 1;
+    }
+    else if (data == (*raiz)->info){
+        (*raiz)->qtd++;
+        return;
+    }
+    else if (data < (*raiz)->info){
+        BalancedInsert(&((*raiz)->left), data, status);
+        if (*status == 1){
+            switch ((*raiz)->balance){
+                case 1:
+                    (*raiz)->balance = 0;
+                    *status = 0;
+                    break;
+                case 0:
+                    (*raiz)->balance = -1;
+                    break;
+                case -1:
+                    RotateRight(raiz, status);
+                    *status = 0;
+            }
+        }
+    }else{
+        BalancedInsert(&((*raiz)->right), data, status);
+        if (*status == 1){
+            switch ((*raiz)->balance){
+                case -1:
+                    (*raiz)->balance = 0;
+                    *status = 0;
+                    break;
+                case 0:
+                    (*raiz)->balance = 1;
+                    break;
+                case 1:
+                    RotateLeft(raiz, status);
+                    *status = 0;
+            }
+        }
+    }
+}
+
+void BalancedInsertTree(Tree tree, int data){
+    int status = 0;
+    BalancedInsert(&(tree->node), data, &status);
+    if (status == 1){
+        tree->size++;
+    }
+}
+
+void BalancedRemove(Node *raiz, int data, int *status){
+    if (*raiz == NULL){
+        *status = 0;
+        return;
+    }
+    else if (data < (*raiz)->info){
+        BalancedRemove(&((*raiz)->left), data, status);
+        if (*status == 1){
+            switch ((*raiz)->balance){
+                case -1:
+                    (*raiz)->balance = 0;
+                    break;
+                case 0:
+                    (*raiz)->balance = 1;
+                    *status = 0;
+                    break;
+                case 1:
+                    RotateLeft(raiz, status);
+                    if ((*raiz)->balance == 0)
+                        *status = 0;
+            }
+        }
+    }else if (data > (*raiz)->info){
+        BalancedRemove(&((*raiz)->right), data, status);
+        if (*status == 1){
+            switch ((*raiz)->balance){
+                case 1:
+                    (*raiz)->balance = 0;
+                    break;
+                case 0:
+                    (*raiz)->balance = -1;
+                    *status = 0;
+                    break;
+                case -1:
+                    RotateRight(raiz, status);
+                    if ((*raiz)->balance == 0)
+                        *status = 0;
+            }
+        }
+    }else{
+        Node aux = *raiz;
+        if ((*raiz)->left == NULL){
+            *raiz = (*raiz)->right;
+            free(aux);
+            *status = 1;
+        }else if ((*raiz)->right == NULL){
+            *raiz = (*raiz)->left;
+            free(aux);
+            *status = 1;
+        }else{
+            Node temp = (*raiz)->right;
+            while (temp->left != NULL)
+                temp = temp->left;
+
+            (*raiz)->info = temp->info;
+
+            BalancedRemove(&((*raiz)->right), temp->info, status);
+
+            if (*status == 1){
+                switch ((*raiz)->balance){
+                    case 1:
+                        (*raiz)->balance = 0;
+                        break;
+                    case 0:
+                        (*raiz)->balance = -1;
+                        *status = 0;
+                        break;
+                    case -1:
+                        RotateRight(raiz, status);
+                        if ((*raiz)->balance == 0)
+                            *status = 0;
+                }
+            }
+        }
     }
 }
 
