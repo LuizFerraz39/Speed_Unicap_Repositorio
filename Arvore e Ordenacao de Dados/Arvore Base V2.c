@@ -26,6 +26,12 @@ typedef struct fila {
     int qtd;
 }*Fila;
 
+typedef struct Familia {
+    Node pai;
+    Node filho;
+    int iguais;
+}* Familia;
+
 typedef struct pilha {
     Node dados[MAX];
     int topo;
@@ -223,6 +229,51 @@ int SearchNode(Tree tree, int data){
     }
 }
 
+Familia SearchNodeV2(Tree tree, int data){
+    Familia family = malloc(sizeof(struct Familia));
+
+    Familia counter = NULL;
+    
+    if (tree->node == NULL){
+        return counter;
+    }
+
+    Node aux = tree->node;
+    Node nodecurrent = tree->node;
+    family->pai=aux;
+    family->filho=nodecurrent;
+    family->iguais= 1;
+
+    while(1){
+        if (data == nodecurrent->data){
+            family->pai=aux;
+            family->filho=nodecurrent;
+            if (aux != nodecurrent){
+                family->iguais = 0;
+            }
+            return family;
+        }
+        if (data > nodecurrent->data){
+            if (nodecurrent->right == NULL){
+                return counter;
+            }
+            else{
+                aux = nodecurrent;
+                nodecurrent = nodecurrent->right;
+            }
+        }
+        if (data < nodecurrent->data){
+            if (nodecurrent->left == NULL){
+                return counter;
+            }
+            else{
+                aux = nodecurrent;
+                nodecurrent = nodecurrent->left;
+            }
+        }
+    }
+}
+
 Node* TreeToArray(Tree tree){
     Node* array = malloc(tree->size * sizeof(Node));
     int value = 0;
@@ -235,10 +286,10 @@ Node* TreeToArray(Tree tree){
 
 int isEmpty(Fila f){
     if (f->inicio == NULL){
-        return 1;
+        return 0;
     }
     else{
-        return 0;
+        return 1;
     }
 }
 
@@ -317,6 +368,21 @@ void NodeToArray(Node node, Node* array, int* counter){
     
     if(node->right != NULL){
         NodeToArray(node->right, array, counter);
+    }
+
+}
+
+void NodeCounter(Node node, int* counter){
+    if(node->left != NULL){
+        NodeCounter(node->left, counter);
+    }
+
+    for (int i = 0; i < node->qtd; i++){
+        (*counter)++;
+    }
+    
+    if(node->right != NULL){
+        NodeCounter(node->right, counter);
     }
 
 }
@@ -433,199 +499,92 @@ void FNaoRecursivaContarNosNaoTerminais(Tree tree, int* counter){
     }
 }
 
-void RotateLeft(Node *raiz, int *status){
-    if ((*raiz)->right->balance == 1){
-        Node aux = *raiz;
-        *raiz = aux->right;
-        aux->right = (*raiz)->left;
-        (*raiz)->left = aux;
-        aux->balance = 0;
-        (*raiz)->balance = 0;
+int RemoveNode(Tree tree, int data){
+    if (SearchNode(tree, data) == 0){
+        return 0;
     }
-    else{
-        Node aux1 = (*raiz)->right;
-        Node aux2 = aux1->left;
-        aux1->left = aux2->right;
-        aux2->right = aux1;
-        (*raiz)->right = aux2->left;
-        aux2->left = *raiz;
-        if (aux2->balance == 1){
-            (*raiz)->balance = -1;
-            aux1->balance = 0;
-        }
-        else if (aux2->balance == 0){
-            (*raiz)->balance = 0;
-            aux1->balance = 0;
-        }
-        else{
-            (*raiz)->balance = 0;
-            aux1->balance = 1;
-        }
-        *raiz = aux2;
-        (*raiz)->balance = 0;
-    }
-}
 
-void RotateRight(Node *raiz, int *status){
-    if ((*raiz)->left->balance == -1){
-        Node aux = *raiz;
-        *raiz = aux->left;
-        aux->left = (*raiz)->right;
-        (*raiz)->right = aux;
-        aux->balance = 0;
-        (*raiz)->balance = 0;
-    }
-    else{
-        Node aux1 = (*raiz)->left;
-        Node aux2 = aux1->right;
-        aux1->right = aux2->left;
-        aux2->left = aux1;
-        (*raiz)->left = aux2->right;
-        aux2->right = *raiz;
-        if (aux2->balance == -1){
-            (*raiz)->balance = 1;
-            aux1->balance = 0;
-        }
-        else if (aux2->balance == 0){
-            (*raiz)->balance = 0;
-            aux1->balance = 0;
-        }
-        else{
-            (*raiz)->balance = 0;
-            aux1->balance = -1;
-        }
-        *raiz = aux2;
-        (*raiz)->balance = 0;
-    }
-}
+    Familia family = SearchNodeV2(tree, data);
+    Node current = family->filho;
+    Node father = family->pai;
 
-void BalancedInsert(Node *raiz, int data, int *status){
-    if (*raiz == NULL){
-        *raiz = CreateNode(data);
-        *status = 1;
+    if(current->qtd>1){
+        current->qtd--;
+        return 1;
     }
-    else if (data == (*raiz)->info){
-        (*raiz)->qtd++;
-        return;
-    }
-    else if (data < (*raiz)->info){
-        BalancedInsert(&((*raiz)->left), data, status);
-        if (*status == 1){
-            switch ((*raiz)->balance){
-                case 1:
-                    (*raiz)->balance = 0;
-                    *status = 0;
-                    break;
-                case 0:
-                    (*raiz)->balance = -1;
-                    break;
-                case -1:
-                    RotateRight(raiz, status);
-                    *status = 0;
-            }
-        }
-    }else{
-        BalancedInsert(&((*raiz)->right), data, status);
-        if (*status == 1){
-            switch ((*raiz)->balance){
-                case -1:
-                    (*raiz)->balance = 0;
-                    *status = 0;
-                    break;
-                case 0:
-                    (*raiz)->balance = 1;
-                    break;
-                case 1:
-                    RotateLeft(raiz, status);
-                    *status = 0;
-            }
-        }
-    }
-}
 
-void BalancedInsertTree(Tree tree, int data){
-    int status = 0;
-    BalancedInsert(&(tree->node), data, &status);
-    if (status == 1){
-        tree->size++;
+    int isleft = 0;
+    if(father->left == current){
+        isleft = 1;
     }
-}
 
-void BalancedRemove(Node *raiz, int data, int *status){
-    if (*raiz == NULL){
-        *status = 0;
-        return;
-    }
-    else if (data < (*raiz)->info){
-        BalancedRemove(&((*raiz)->left), data, status);
-        if (*status == 1){
-            switch ((*raiz)->balance){
-                case -1:
-                    (*raiz)->balance = 0;
-                    break;
-                case 0:
-                    (*raiz)->balance = 1;
-                    *status = 0;
-                    break;
-                case 1:
-                    RotateLeft(raiz, status);
-                    if ((*raiz)->balance == 0)
-                        *status = 0;
-            }
-        }
-    }else if (data > (*raiz)->info){
-        BalancedRemove(&((*raiz)->right), data, status);
-        if (*status == 1){
-            switch ((*raiz)->balance){
-                case 1:
-                    (*raiz)->balance = 0;
-                    break;
-                case 0:
-                    (*raiz)->balance = -1;
-                    *status = 0;
-                    break;
-                case -1:
-                    RotateRight(raiz, status);
-                    if ((*raiz)->balance == 0)
-                        *status = 0;
-            }
-        }
-    }else{
-        Node aux = *raiz;
-        if ((*raiz)->left == NULL){
-            *raiz = (*raiz)->right;
-            free(aux);
-            *status = 1;
-        }else if ((*raiz)->right == NULL){
-            *raiz = (*raiz)->left;
-            free(aux);
-            *status = 1;
+    if (current->left == current->right && current->right == NULL){
+        if (isleft){
+            father->left = NULL;
         }else{
-            Node temp = (*raiz)->right;
-            while (temp->left != NULL)
-                temp = temp->left;
-
-            (*raiz)->info = temp->info;
-
-            BalancedRemove(&((*raiz)->right), temp->info, status);
-
-            if (*status == 1){
-                switch ((*raiz)->balance){
-                    case 1:
-                        (*raiz)->balance = 0;
-                        break;
-                    case 0:
-                        (*raiz)->balance = -1;
-                        *status = 0;
-                        break;
-                    case -1:
-                        RotateRight(raiz, status);
-                        if ((*raiz)->balance == 0)
-                            *status = 0;
-                }
-            }
+            father->right = NULL;
         }
+
+        free(current);
+        return 1;
     }
+
+    if (current->left == NULL){
+        if (isleft){
+            father->left = current->right;
+        }else{
+            father->right = current->right;
+        }
+
+        free(current);
+        return 1;
+    }
+
+    if (current->right == NULL){
+        if (isleft){
+            father->left = current->left;
+        }else{
+            father->right = current->left;
+        }
+
+        free(current);
+        return 1;
+    }
+
+    int counter = 0;
+    NodeCounter(current, &counter);
+    Node* array = malloc(counter * sizeof(Node));
+    int counter2 = 0;
+    NodeToArray(current, array, &counter2);
+
+    Node maior = array[counter-1];
+    int data2 = maior->data;
+    int qtd = maior->qtd;
+
+    for (int i = 0; i < qtd; i++){
+        RemoveNode(tree, data2);
+    }
+
+    family->filho->data = data2;
+    family->filho->qtd = qtd;
+    
+    free(array);
+    return 1;
+}
+
+int NodeHeight(Node node, int size){
+    int a = 0;
+    int b = 0;
+    if (node->left != NULL){
+        a = NodeHeight(node->left, size+1);
+    }
+    if (node->right != NULL){
+        b = NodeHeight(node->right, size+1);
+    }
+    int maior = (a > b) ? a : b;
+    size = (size > maior) ? size : maior;
+
+    return size;
 }
 
 int main (){
@@ -641,6 +600,18 @@ int main (){
     InsertNode(12, tree);
     InsertNode(34, tree);
     InsertNode(74, tree);
+
+    int size1;
+    size1 = NodeHeight(tree->node, 0);
+    int size2 = NodeHeight(tree->node->left, 0);
+    int size3 = NodeHeight(tree->node->right, 0);
+    int size4 = NodeHeight(tree->node->right->right, 0);
+    int size5 = NodeHeight(tree->node->right->right->left, 0);
+    printf("%d altura da arvore\n", size1);
+    printf("%d altura do no 17\n", size2);
+    printf("%d altura do no 68\n", size3);
+    printf("%d altura do no 81\n", size4);
+    printf("%d altura do no 74\n", size5);
 
     Node* array = TreeToArray(tree);
     int size = tree->size;
@@ -693,6 +664,20 @@ int main (){
 
     printf("Passeio em ordem nao recursivo:\n");
     PasseioemOrdemNaoRecursivo(tree);
+
+    RemoveNode(tree, 81);
+    printf("Passeio em ordem nao recursivo apos remocao:\n");
+    PasseioemOrdemNaoRecursivo(tree);
+
+    RemoveNode(tree, 50);
+
+        printf("Passeio em ordem nao recursivo:\n");
+    PasseioemOrdemNaoRecursivo(tree);
+    RemoveNode(tree, 42);
+
+        printf("Passeio em ordem nao recursivo:\n");
+    PasseioemOrdemNaoRecursivo(tree);
+
 
     free(array);
     DeleteTree(tree);

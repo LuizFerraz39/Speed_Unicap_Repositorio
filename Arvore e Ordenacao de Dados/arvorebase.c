@@ -4,10 +4,11 @@
 #define MAX 50
 
 
-typedef struct Aluno{
+typedef struct aluno{
     char matricula[20];
     char nome[100];
-    
+    int faltas;
+    float media;
 } *Aluno;
 
 typedef struct Node{
@@ -119,6 +120,7 @@ int dequeue(Fila f, Node* node){
     return 0;
 }
 
+Node CreateAluno(char* matricula, char* nome, int faltas, float media);
 Node CreateNode(Aluno aluno);
 Tree CreateTree();
 void DeleteTree(Tree tree);
@@ -127,6 +129,29 @@ void InsertNode(Aluno aluno, Tree tree);
 Node* TreeToArray(Tree tree);
 void NodeToArray(Node node, Node* array, int* counter);
 void PrintArrayofNodes(Node* array, int size);
+
+Node DigitarAluno() {
+    char matricula[20];
+    char nome[100];
+    int faltas;
+    float media;
+
+    printf("Digite a matricula do aluno: \n");
+    scanf("%19s", matricula); 
+
+    while (getchar() != '\n'); 
+
+    printf("Digite o nome do aluno: \n");
+    scanf("%99[^\n]", nome); 
+
+    printf("Digite a quantidade de faltas do aluno: \n");
+    scanf("%d", &faltas);
+
+    printf("Digite a media do aluno: \n");
+    scanf("%f", &media); 
+
+    return CreateAluno(matricula, nome, faltas, media);
+}
 
 Node CreateNode(Aluno aluno){
     Node node = calloc(1, sizeof(struct Node));
@@ -156,6 +181,7 @@ void FreeNode(Node node){
     if(node->right != NULL){
         FreeNode(node->right);
     }
+    free(node->aluno);
     free(node);
 }
 
@@ -203,7 +229,7 @@ void InsertNode(Aluno aluno, Tree tree){
     }
 }
 
-int SearchNode(Tree tree, Aluno aluno){
+int SearchNode(Tree tree, char* matricula){
     int counter = 0;
     
     if (tree->node == NULL){
@@ -213,11 +239,11 @@ int SearchNode(Tree tree, Aluno aluno){
     Node nodecurrent = tree->node;
 
     while(1){
-        if (aluno->nome == nodecurrent->aluno->nome){
+        if (matricula == nodecurrent->aluno->matricula){
             counter = nodecurrent->qtd;
             return counter;
         }
-        if (strcmp(aluno->nome, nodecurrent->aluno->nome)){
+        if (strcmp(matricula, nodecurrent->aluno->matricula)){
             if (nodecurrent->right == NULL){
                 return counter;
             }
@@ -236,7 +262,7 @@ int SearchNode(Tree tree, Aluno aluno){
     }
 }
 
-Familia SearchNodeV2(Tree tree, Aluno aluno){
+Familia SearchNodeV2(Tree tree, char* matricula){
     Familia family = malloc(sizeof(struct Familia));
 
     Familia counter = NULL;
@@ -252,7 +278,7 @@ Familia SearchNodeV2(Tree tree, Aluno aluno){
     family->iguais= 1;
 
     while(1){
-        if (aluno->nome == nodecurrent->aluno->nome){
+        if (matricula == nodecurrent->aluno->matricula){
             family->pai=aux;
             family->filho=nodecurrent;
             if (aux != nodecurrent){
@@ -260,7 +286,7 @@ Familia SearchNodeV2(Tree tree, Aluno aluno){
             }
             return family;
         }
-        if (strcmp(aluno->nome, nodecurrent->aluno->nome) > 0){
+        if (strcmp(matricula, nodecurrent->aluno->matricula) > 0){
             if (nodecurrent->right == NULL){
                 return counter;
             }
@@ -269,7 +295,7 @@ Familia SearchNodeV2(Tree tree, Aluno aluno){
                 nodecurrent = nodecurrent->right;
             }
         }
-        if (strcmp(aluno->nome, nodecurrent->aluno->nome) < 0){
+        if (strcmp(matricula, nodecurrent->aluno->matricula) < 0){
             if (nodecurrent->left == NULL){
                 return counter;
             }
@@ -397,7 +423,7 @@ void NodeCounter(Node node, int* counter){
 void PrintArrayofNodes(Node* array, int size){
     printf(" [ ");
     for (int i = 0; i < size; i++){
-        printf("%d ", array[i]->aluno->nome);
+        printf("%d ", array[i]->aluno->matricula);
     }
     printf("]\n");
     return;
@@ -506,12 +532,12 @@ void FNaoRecursivaContarNosNaoTerminais(Tree tree, int* counter){
     }
 }
 
-int RemoveNode(Tree tree, int data){
-    if (SearchNode(tree, data) == 0){
+int RemoveNode(Tree tree, char* matricula){
+    if (SearchNode(tree, matricula) == 0){
         return 0;
     }
 
-    Familia family = SearchNodeV2(tree, data);
+    Familia family = SearchNodeV2(tree, matricula);
     Node current = family->filho;
     Node father = family->pai;
 
@@ -565,14 +591,14 @@ int RemoveNode(Tree tree, int data){
     NodeToArray(current, array, &counter2);
 
     Node maior = array[counter-1];
-    int data2 = maior->data;
+    char* data2 = maior->aluno->matricula;
     int qtd = maior->qtd;
 
     for (int i = 0; i < qtd; i++){
         RemoveNode(tree, data2);
     }
 
-    family->filho->data = data2;
+    strcpy(family->filho->aluno->matricula, data2);
     family->filho->qtd = qtd;
     
     free(array);
@@ -581,17 +607,18 @@ int RemoveNode(Tree tree, int data){
 
 int main (){
     Tree tree = CreateTree();
+    char* matriculas[8] = {"202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608"};
+    char* nomes[8] = {
+        "Ana Silva", "Bruno Sousa", "Carlos Lima", "Diana Costa",
+        "Eduardo Rocha", "Fernanda Alves", "Gabriel Melo", "Helena Gomes"
+    };
+    int faltas[8] = {2, 4, 0, 1, 5, 3, 0, 2};
+    float medias[8] = {8.5, 7.0, 9.2, 6.5, 5.8, 8.0, 9.5, 7.8};
 
-    InsertNode(42, tree);
-    InsertNode(17, tree);
-    InsertNode(68, tree);
-    InsertNode(5, tree);
-    InsertNode(29, tree);
-    InsertNode(53, tree);
-    InsertNode(81, tree);
-    InsertNode(12, tree);
-    InsertNode(34, tree);
-    InsertNode(74, tree);
+    for (int i = 0; i < 8; i++) {
+        Node novoAluno = CreateAluno(matriculas[i], nomes[i], faltas[i], medias[i]);
+        InsertNode(novoAluno, tree);
+    }
 
     Node* array = TreeToArray(tree);
     int size = tree->size;
