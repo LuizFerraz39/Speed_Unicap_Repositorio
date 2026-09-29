@@ -235,6 +235,7 @@ Familia SearchNodeV2(Tree tree, int data){
     Familia counter = NULL;
     
     if (tree->node == NULL){
+        free(family);
         return counter;
     }
 
@@ -306,7 +307,7 @@ void PasseioporNivel(Tree tree){
     if(tree->node != NULL){
         fila = criar_fila();
         enqueue(fila, tree->node);
-        while(isEmpty(fila) != 1){
+        while(isEmpty(fila) == 1){
             dequeue(fila, &aux);
             if (aux->left != NULL){
                 enqueue(fila, aux->left);
@@ -677,7 +678,6 @@ int main (){
 
         printf("Passeio em ordem nao recursivo:\n");
     PasseioemOrdemNaoRecursivo(tree);
-
 
     free(array);
     DeleteTree(tree);

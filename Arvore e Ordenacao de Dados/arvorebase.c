@@ -3,7 +3,6 @@
 #include<string.h>
 #define MAX 50
 
-
 typedef struct aluno{
     char matricula[20];
     char nome[100];
@@ -11,11 +10,20 @@ typedef struct aluno{
     float media;
 } *Aluno;
 
+typedef struct info{
+    Aluno data;
+}* Info;
+
+typedef struct chave{
+    char* codigo;
+}* Chave;
+
 typedef struct Node{
-    Aluno aluno;
+    Info info;
     struct Node* left;
     struct Node* right;
     int qtd;
+    int balance;
 } *Node;
 
 typedef struct Tree{
@@ -44,6 +52,10 @@ typedef struct pilha {
     Node dados[MAX];
     int topo;
 } *Pilha;
+
+Aluno getData(Info info){
+    return info->data;
+}
 
 Pilha criar_pilha(){
     Pilha p = malloc(sizeof(struct pilha));
@@ -120,8 +132,8 @@ int dequeue(Fila f, Node* node){
     return 0;
 }
 
-Node CreateAluno(char* matricula, char* nome, int faltas, float media);
-Node CreateNode(Aluno aluno);
+Aluno CreateAluno(char* matricula, char* nome, int faltas, float media);
+Node CreateNode(Info info);
 Tree CreateTree();
 void DeleteTree(Tree tree);
 void FreeNode(Node node);
@@ -129,6 +141,29 @@ void InsertNode(Aluno aluno, Tree tree);
 Node* TreeToArray(Tree tree);
 void NodeToArray(Node node, Node* array, int* counter);
 void PrintArrayofNodes(Node* array, int size);
+
+Info CreateInfo(Aluno aluno){
+    Info info = malloc(sizeof(struct info));
+    info->data = aluno;
+    return info;
+}
+
+void FreeInfo(Info info){
+    free(info->data);
+    free(info);
+    return;
+}
+
+Aluno CreateAluno(char* matricula, char* nome, int faltas, float media){
+    Aluno aluno = malloc(sizeof(struct aluno));
+
+    strcpy(aluno->matricula, matricula);
+    strcpy(aluno->nome, nome);
+    aluno->faltas = faltas;
+    aluno->media = media;
+
+    return aluno;
+}
 
 Node DigitarAluno() {
     char matricula[20];
@@ -150,14 +185,17 @@ Node DigitarAluno() {
     printf("Digite a media do aluno: \n");
     scanf("%f", &media); 
 
-    return CreateAluno(matricula, nome, faltas, media);
+    Aluno aluno = CreateAluno(matricula, nome, faltas, media);
+    Info info = CreateInfo(aluno);
+    return CreateNode(info);
 }
 
-Node CreateNode(Aluno aluno){
+Node CreateNode(Info info){
     Node node = calloc(1, sizeof(struct Node));
 
-    node->aluno = aluno;
+    node->info = info;
     node->qtd = 1;
+    node->balance = 0;
 
     return node;
 }
@@ -174,6 +212,8 @@ void DeleteTree(Tree tree){
     free(tree);
 }
 
+
+
 void FreeNode(Node node){
     if(node->left != NULL){
         FreeNode(node->left);
@@ -181,17 +221,17 @@ void FreeNode(Node node){
     if(node->right != NULL){
         FreeNode(node->right);
     }
-    free(node->aluno);
+    FreeData(node->info);
     free(node);
 }
 
-void InsertNode(Aluno aluno, Tree tree){
+void InsertNode(Info info, Tree tree){
     if(tree == NULL){
         printf("Arvore nao existe para inserir dados");
         return;
     }
 
-    Node nodeinsert = CreateNode(aluno);
+    Node nodeinsert = CreateNode(info);
     tree->size++;
 
     if (tree->node == NULL){
@@ -202,13 +242,13 @@ void InsertNode(Aluno aluno, Tree tree){
     Node nodecurrent = tree->node;
 
     while(1){
-        if (nodeinsert->aluno->nome == nodecurrent->aluno->nome){
+        if (CompareData(nodeinsert->info, nodecurrent->info) == 0){
             nodecurrent->qtd++;
             free(nodeinsert);
             return;
         }
 
-        if (strcmp(nodeinsert->aluno->nome, nodecurrent->aluno->nome)){
+        if (CompareData(nodeinsert->info, nodecurrent->info) > 0){
             if (nodecurrent->right == NULL){
                 nodecurrent->right = nodeinsert;
                 return;
@@ -217,7 +257,7 @@ void InsertNode(Aluno aluno, Tree tree){
                 nodecurrent = nodecurrent->right;
             }
         }
-        if (strcmp(nodeinsert->aluno->nome, nodecurrent->aluno->nome) < 0){
+        if (CompareData(nodeinsert->info, nodecurrent->info) < 0){
             if (nodecurrent->left == NULL){
                 nodecurrent->left = nodeinsert;
                 return;
@@ -243,7 +283,7 @@ int SearchNode(Tree tree, char* matricula){
             counter = nodecurrent->qtd;
             return counter;
         }
-        if (strcmp(matricula, nodecurrent->aluno->matricula)){
+        if (strcmp(matricula, nodecurrent->aluno->matricula)> 0){
             if (nodecurrent->right == NULL){
                 return counter;
             }
@@ -333,28 +373,6 @@ int isEmptyP(Pilha p){
     return 0;
 }
 
-void PasseioporNivel(Tree tree){
-    Fila fila;
-    Node aux;
-    if(tree->node != NULL){
-        fila = criar_fila();
-        enqueue(fila, tree->node);
-        while(isEmpty(fila) != 1){
-            dequeue(fila, &aux);
-            if (aux->left != NULL){
-                enqueue(fila, aux->left);
-            }
-            if (aux->right != NULL){
-                enqueue(fila, aux->right);
-            }
-            printf("%s \n", aux->aluno->nome);
-        }
-    }
-    else{
-        printf("Arvore vazia\n");
-    }
-}
-
 void PasseioemOrdemNaoRecursivo(Tree tree){
     Pilha pilha;
     int checado = 0;
@@ -373,7 +391,7 @@ void PasseioemOrdemNaoRecursivo(Tree tree){
             }
 
             for (int i = 0; i < aux->qtd;i++){
-                printf("%d \n", aux->aluno->nome);
+                printf("%s \n", aux->aluno->nome);
             }
             pop(pilha);
 
@@ -423,7 +441,7 @@ void NodeCounter(Node node, int* counter){
 void PrintArrayofNodes(Node* array, int size){
     printf(" [ ");
     for (int i = 0; i < size; i++){
-        printf("%d ", array[i]->aluno->matricula);
+        printf("%s ", array[i]->aluno->matricula);
     }
     printf("]\n");
     return;
@@ -605,9 +623,126 @@ int RemoveNode(Tree tree, char* matricula){
     return 1;
 }
 
+int CompareData(Info info, Info info2){
+    return strcmp(info->data->matricula, info2->data->matricula);
+}
+
+void rotacaoEsq (Node*a,int *status) {
+    Node b, c;
+    b = (*a)->right;
+    if (b->balance == 1) { // rotação simples
+        (*a)->right = b->left;
+        b->left = *a;
+        (*a)->balance = 0;
+        *a = b;
+    }
+    else { // rotação dupla
+        c = b->left;
+        b->left = c->right;
+        c->right = b;
+        (*a)->right = c->left;
+        c->left = *a;
+    if (c->balance == 1)
+        (*a)->balance = -1;
+    else
+        (*a)->balance = 0;
+    if (c->balance == -1)
+        b->balance = 1;
+    else
+        b->balance = 0;
+        *a = c;
+    } 
+    (*a)->balance = 0;
+    *status = 0;
+}
+
+void rotacaoDir (Node* a, int *status) {
+    Node b, c;
+    b = (*a)->left;
+    if (b->balance == -1) { // rotação simples
+        (*a)->left = b->right;
+        b->right = *a;
+        (*a)->balance = 0;
+        *a = b;
+    }
+    else { // rotação dupla
+        c = b->right;
+        b->right = c->left;
+        c->left = b;
+        (*a)->left = c->right;
+        c->right = *a;
+        if (c->balance == -1)
+            (*a)->balance = 1;
+        else
+            (*a)->balance = 0;
+        if (c->balance == 1)
+            b->balance = -1;
+        else
+        b->balance = 0;
+        *a = c;
+    } 
+    (*a)->balance = 0;
+    *status = 0;
+}
+
+void BalancedInsert (Node* root, Info info, int *status) {
+    if ((*root) == NULL) {
+        (*root) = CreateNode(info);
+        *status = 1;
+    }
+    else if (CompareData(info, (*root)->info) == 0){
+        (*root)->qtd++;
+        return;
+    }
+    else if((CompareData(info, (*root)->info) > 0)) {
+        BalancedInsert(&((*root)->left), info, status);
+        if (*status == 1)
+            switch ((*root)->balance) {
+                case 1 : (*root)->balance = 0; *status = 0; break;
+                case 0 : (*root)->balance = -1; break;
+                case -1 : rotacaoDir((*root),status); break;
+        }
+    }
+    else {
+        BalancedInsert(&((*root)->right), info, status);
+        if (*status == 1)
+        switch ((*root)->balance) {
+        case -1 : (*root)->balance = 0; *status = 0; break;
+        case 0 : (*root)->balance = 1; break;
+        case 1 : rotacaoEsq((*root),status); break;
+        }
+    }
+}
+
+void PasseioporNivel(Tree tree){
+    Fila fila;
+    Node aux;
+    printf("Passeio por nivel: \n");
+    if(tree->node != NULL){
+        fila = criar_fila();
+        enqueue(fila, tree->node);
+        while(isEmpty(fila) == 1){
+            dequeue(fila, &aux);
+            if (aux->left != NULL){
+                enqueue(fila, aux->left);
+            }
+            if (aux->right != NULL){
+                enqueue(fila, aux->right);
+            }
+            printf("Matricula: %s ", aux->aluno->matricula);
+            printf("Nome: %s ", aux->aluno->nome);
+            printf("Media: %.2f ", aux->aluno->media);
+            printf("Faltas: %d \n", aux->aluno->faltas);
+        }
+    }
+    else{
+        printf("Arvore vazia\n");
+    }
+}
+
 int main (){
     Tree tree = CreateTree();
-    char* matriculas[8] = {"202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608"};
+    char* matriculas[8] = {"000001", "202602", "100003", "999604", "202605", "333606", "111607", "002608"};
     char* nomes[8] = {
         "Ana Silva", "Bruno Sousa", "Carlos Lima", "Diana Costa",
         "Eduardo Rocha", "Fernanda Alves", "Gabriel Melo", "Helena Gomes"
@@ -616,16 +751,17 @@ int main (){
     float medias[8] = {8.5, 7.0, 9.2, 6.5, 5.8, 8.0, 9.5, 7.8};
 
     for (int i = 0; i < 8; i++) {
-        Node novoAluno = CreateAluno(matriculas[i], nomes[i], faltas[i], medias[i]);
-        InsertNode(novoAluno, tree);
+        Aluno baseAluno = CreateAluno(matriculas[i], nomes[i], faltas[i], medias[i]);
+        InsertNode(baseAluno, tree);
     }
 
     Node* array = TreeToArray(tree);
     int size = tree->size;
 
-    printf("Arvore emOrdem Recusivamente: \n");
+    printf("Arvore preOrdem Recusivamente: \n");
     PrintArrayofNodes(array, size);
 
+    PasseioporNivel(tree);
     free(array);
     DeleteTree(tree);
 }
