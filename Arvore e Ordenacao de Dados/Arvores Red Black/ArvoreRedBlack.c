@@ -370,7 +370,29 @@ void RotateRight(Node filho, Node pai, Node avo, Tree tree){
     }
 }
 
-void RotateLeft(Node filho, Node pai, Node avo){
+void RotateRightV2(Node filho, Node pai, Node avo, Tree tree){
+    if (CompareData(filho, pai) < 0){ // simples
+        avo->left = pai->right;
+        pai->right = avo;
+
+        if (avo->father != NULL){
+            if (CompareData(avo, avo->father) < 0){
+                pai->father = avo->father;
+                avo->father->left = pai;
+            }
+            avo->color = 1;
+        }else{
+            tree->node = pai;
+        }
+        avo->father = pai;
+        pai->color = 0;
+    }
+    else{   //dupla
+        
+    }
+}
+
+void RotateLeft(Node filho, Node pai, Node avo, Tree tree){
     if (CompareData(filho, pai) < 0){ // simples
         
     }
@@ -390,7 +412,7 @@ void InsertNode(Info info, Tree tree){
 
     if (tree->node == NULL){
         tree->node = nodeinsert;
-        BalanceRedBlack(tree->node);
+        BalanceRedBlack(tree->node, tree);
         return;
     }
 
@@ -407,7 +429,7 @@ void InsertNode(Info info, Tree tree){
             if (nodecurrent->right == NULL){
                 nodeinsert->father = nodecurrent;
                 nodecurrent->right = nodeinsert;
-                BalanceRedBlack(nodeinsert);
+                BalanceRedBlack(nodeinsert, tree);
                 return;
             }
             else{
@@ -418,7 +440,7 @@ void InsertNode(Info info, Tree tree){
             if (nodecurrent->left == NULL){
                 nodeinsert->father = nodecurrent;
                 nodecurrent->left = nodeinsert;
-                BalanceRedBlack(nodeinsert);
+                BalanceRedBlack(nodeinsert, tree);
                 return;
             }
             else{
@@ -455,6 +477,39 @@ int SearchNode(Tree tree, Chave chave){
             }
         }
         else{
+            if (nodecurrent->left == NULL){
+                return counter;
+            }
+            else{
+                nodecurrent = nodecurrent->left;
+            }
+        }
+    }
+}
+
+Node SearchNodeV3(Tree tree, Chave chave){
+    Node counter = NULL;
+    
+    if (tree->node == NULL){
+        return counter;
+    }
+
+    Node nodecurrent = tree->node;
+
+    while(1){
+        if (CompareKey(chave, nodecurrent->info) == 0){
+            counter =nodecurrent;
+            return counter;
+        }
+        if (CompareKey(chave, nodecurrent->info) > 0){
+            if (nodecurrent->right == NULL){
+                return counter;
+            }
+            else{
+                nodecurrent = nodecurrent->right;
+            }
+        }
+        if (CompareKey(chave, nodecurrent->info) < 0){
             if (nodecurrent->left == NULL){
                 return counter;
             }
@@ -508,6 +563,37 @@ Familia SearchNodeV2(Tree tree, Chave chave){
             }
         }
     }
+}
+
+void AlterarNode(Node node, Info info){
+    FreeData(node->info);
+    node->info = info;
+}
+
+void DigitarAlteracao(Tree tree){
+    Chave chave = DigitarChave();
+    Node nodecurrent = SearchNodeV3(tree, chave);
+
+    char descricao[100];
+    int quantidade;
+    double preco;
+
+    printf("Digite as novas alteracoes: \n");
+
+    printf("Digite a nova descricao do produto: \n");
+    scanf("%99[^\n]", descricao); 
+
+    printf("Digite a nova quantidade do produto: \n");
+    scanf("%d", &quantidade);
+
+    printf("Digite o novo preco do produto: \n");
+    scanf("%lf", &preco); 
+
+    Produto produto = CreateProduto(getChave(chave), descricao, quantidade, preco);
+    Info info = CreateInfo(produto);
+    FreeInfo(nodecurrent->info);
+    nodecurrent->info = info;
+    return;
 }
 
 Node* TreeToArray(Tree tree){
@@ -572,101 +658,6 @@ Node MenorNode(Node* array){
     return array[0];
 }
 
-void FRecursivaContarNos(Node node, int* counter){
-    if(node->left != NULL){
-        FRecursivaContarNos(node->left, counter);
-    }
-
-    for (int i = 0; i < node->qtd; i++){
-        (*counter)++;
-    }
-    
-    if(node->right != NULL){
-        FRecursivaContarNos(node->right, counter);
-    }
-
-}
-
-void FNaoRecursivaContarNos(Tree tree, int* counter){
-    (*counter) = tree->size;
-}
-
-void FRecursivaContarFolhas(Node node, int* counter){
-    if(node->left != NULL){
-        FRecursivaContarFolhas(node->left, counter);
-    }
-
-    if(node->left == NULL && node->right == NULL){
-        (*counter)++;
-    }
-    
-    if(node->right != NULL){
-        FRecursivaContarFolhas(node->right, counter);
-    }
-}
-
-void FNaoRecursivaContarFolhas(Tree tree, int* counter){
-    Fila fila;
-    Node aux;
-    if(tree->node != NULL){
-        fila = criar_fila();
-        enqueue(fila, tree->node);
-        while(isEmpty(fila) != 0){
-            dequeue(fila, &aux);
-            if (aux->left != NULL){
-                enqueue(fila, aux->left);
-            }
-            if (aux->right != NULL){
-                enqueue(fila, aux->right);
-            }
-            if(aux->left == NULL && aux->right == NULL){
-                (*counter)++;
-            }
-        }
-    }
-    else{
-        return;
-    }
-}
-
-void FRecursivaContarNosNaoTerminais(Node node, int* counter){
-    if(node->left != NULL){
-        FRecursivaContarNosNaoTerminais(node->left, counter);
-    }
-
-    if(node->left != NULL || node->right != NULL){
-        (*counter)++;
-    }
-    
-    if(node->right != NULL){
-        FRecursivaContarNosNaoTerminais(node->right, counter);
-    }
-}
-
-void FNaoRecursivaContarNosNaoTerminais(Tree tree, int* counter){
-    Fila fila;
-    Node aux;
-    if(tree->node != NULL){
-        fila = criar_fila();
-        enqueue(fila, tree->node);
-        while(isEmpty(fila) != 0){
-            dequeue(fila, &aux);
-            if (aux->left != NULL){
-                enqueue(fila, aux->left);
-            }
-            if (aux->right != NULL){
-                enqueue(fila, aux->right);
-            }
-            if(aux->left != NULL || aux->right != NULL){
-                (*counter)++;
-            }
-        }
-    }
-    else{
-        return;
-    }
-}
-
 int CompareData(Info info, Info info2){
     return strcmp(info->data->codigo, info2->data->codigo);
 }
@@ -714,7 +705,7 @@ void rotacaoEsq (Node*a,int *status) {
     *status = 0;
 }
 
-void rotacaoDir (Node* a, int *status) {
+void rotacaoDir (Node* a) {
     Node b, c;
     b = (*a)->left;
     if (b->balance == -1) { // rotação simples
@@ -743,41 +734,12 @@ void rotacaoDir (Node* a, int *status) {
     *status = 0;
 }
 
-void BalancedInsert(Node* root, Info info, int *status, int* size) {
-    if ((*root) == NULL) {
-        (*root) = CreateNode(info);
-        *status = 1;
-        (*size)++;
-    }
-    else if (CompareData(info, (*root)->info) == 0){
-        (*root)->qtd++;
-        return;
-    }
-    else if((CompareData(info, (*root)->info) < 0)) {
-        BalancedInsert(&((*root)->left), info, status, size);
-        if (*status == 1)
-            switch ((*root)->balance) {
-                case 1 : (*root)->balance = 0; *status = 0; break;
-                case 0 : (*root)->balance = -1; break;
-                case -1 : rotacaoDir(root,status); break;
-            }
-    }
-    else {
-        BalancedInsert(&((*root)->right), info, status, size);
-        if (*status == 1)
-            switch ((*root)->balance) {
-                case -1 : (*root)->balance = 0; *status = 0; break;
-                case 0 : (*root)->balance = 1; break;
-                case 1 : rotacaoEsq(root,status); break;
-            }
-    }
-}
 
 void PrintInfo(Info info){
     printf("Matricula: %s ", info->data->codigo);
     printf("Nome: %s ", info->data->descricao);
     printf("Media: %.2f ", info->data->preco);
-    printf("Faltas: %d \n", info->data->faltas);
+    printf("Quantidade do produto: %d \n", info->data->quantidade);
 }
 
 void PasseioporNivel(Tree tree){
@@ -796,7 +758,6 @@ void PasseioporNivel(Tree tree){
                 enqueue(fila, aux->right);
             }
             PrintInfo(aux->info);
-            printf("Balanceamento: %d \n", aux->balance);
         }
     }
     else{
@@ -831,7 +792,7 @@ Chave DigitarChave() {
 
 void CadastrarProduto(Tree tree){
     Info novoProduto = DigitarProduto();
-    BalancedInsert(&(tree->node), novoProduto, &(tree->status), &(tree->size));
+    InsertNode(novoProduto, tree);
     printf("Produto inserido \n");
 }
 
@@ -840,16 +801,13 @@ void BuscarProduto(Tree tree){
 
     int counter = SearchNode(tree, chave);
     if (counter < 1){
-        printf("Produto com essa codigo nao encontrado \n");
+        printf("Produto com esse codigo nao encontrado \n");
     }
     else{
-        Familia familia = SearchNodeV2(tree, chave);
-        Node node = familia->filho;
+        Node nodecurrent = SearchNodeV3(tree, chave);
         printf("Produto encontrado: \n");
-        PrintInfo(node->info);
+        PrintInfo(nodecurrent->info);
     }
-
-    FreeChave(chave);
 }
 
 void PercorrerEmOrdem(Tree tree) {
@@ -860,7 +818,6 @@ void PercorrerEmOrdem(Tree tree) {
 
     for (int i = 0; i < size; i++) {
         PrintInfo(array[i]->info);
-        printf("Balanceamento: %d\n", array[i]->balance);
         printf("\n");
     }
 
@@ -892,7 +849,9 @@ int main() {
         printf("2 - Buscar produto por codigo\n");
         printf("3 - Percorrer arvore por nivel\n");
         printf("4 - Percorrer arvore em ordem\n");
-        printf("5 - Teste basico\n");
+        printf("5 - Alterar produto\n");
+        printf("6 - Testar com produtos de exemplo\n");
+
         printf("0 - Sair\n");
         printf("------------------------------\n");
         printf("Digite o numero de escolha: ");
@@ -918,6 +877,10 @@ int main() {
                 break;
             
             case 5:
+                AlterarProduto(tree);
+                break;
+
+            case 6:
                 testar();
                 break;
 
